@@ -10,23 +10,23 @@ constexpr size_t sizeofNode = 5;
 
 std::vector<unsigned char> lz77::compress(const std::span<const unsigned char> data)
 {
-	constexpr const size_t maxSizeBuffer = 1024*64;
-	size_t sizeBuffer = 0;
+	constexpr const size_t maxSizeBuffer = 5;
+	size_t sizeBuffer{};
 	std::vector<unsigned char> out;
-	std::vector<unsigned char> buffer(maxSizeBuffer);
 	size_t shiftPos{};
+	size_t shiftBuffer{};
 	
 	auto findMatching = [&](Node& node)
 	{
-		size_t bestLength{}, bestPos{};
+		size_t bestLength{0}, bestPos{};
 		for (long long i = 0; i < sizeBuffer;)
 		{
 			long long l{};
-			while (shiftPos + l < data.size() && i >= l && buffer[i - l] == data[shiftPos + l])
+			while (shiftPos + l < data.size() && i + l % sizeBuffer < sizeBuffer && data[shiftBuffer + i + l % sizeBuffer] == data[shiftPos + l])
 				++l;
-			if (l > bestLength)
+			if (l >= bestLength && l != 0)
 			{
-				bestPos = i + 1;
+				bestPos = sizeBuffer-i;
 				bestLength = l;
 			}
 			l ? i += l : ++i;
@@ -34,32 +34,26 @@ std::vector<unsigned char> lz77::compress(const std::span<const unsigned char> d
 		node.offset = bestPos;
 		node.length = bestLength;
 	};
-	auto shiftBuffer = [&](size_t size)
-	{
-		sizeBuffer += size;
-		if (sizeBuffer > maxSizeBuffer)
-			sizeBuffer = maxSizeBuffer;
-		for (int i = sizeBuffer - 1; i >= size; i--)
-		{
-			buffer[i] = buffer[i - size];
-		}
-		for (int i = (size - 1); i >= 0; i--)
-		{
-			buffer[i % sizeBuffer] = data[shiftPos + size - 1 - i];
-		}
-	};
 	while (shiftPos <= data.size())
 	{
 		Node node{};
 		findMatching(node);
-		if (node.length + shiftPos < data.size())
+		shiftPos += node.length;
+		if (shiftPos < data.size())
 		{
-			node.next = data[node.length + shiftPos];
-			shiftBuffer(node.length + 1);
+			node.next = data[shiftPos];
 		}
 		else
 			node.next = '\n';
-		shiftPos += node.length + 1;
+		++shiftPos;
+		if (sizeBuffer < maxSizeBuffer)
+		{
+			sizeBuffer += node.length + 1;
+			if (sizeBuffer > maxSizeBuffer)
+				sizeBuffer = maxSizeBuffer;
+		}
+		if (sizeBuffer == maxSizeBuffer)
+			shiftBuffer = shiftPos - maxSizeBuffer;
 		out.insert(out.end(), reinterpret_cast<unsigned char*>(&node), reinterpret_cast<unsigned char*>(&node) + sizeofNode);
 	}
 	return out;
