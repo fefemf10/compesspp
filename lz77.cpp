@@ -10,15 +10,16 @@ constexpr size_t sizeofNode = 5;
 
 std::vector<unsigned char> lz77::compress(const std::span<const unsigned char> data)
 {
-	constexpr const size_t maxSizeBuffer = 5;
+	constexpr const size_t maxSizeBuffer = 1024*64;
 	size_t sizeBuffer{};
+	std::vector<Node> nodes;
 	std::vector<unsigned char> out;
 	size_t shiftPos{};
 	size_t shiftBuffer{};
 	
 	auto findMatching = [&](Node& node)
 	{
-		size_t bestLength{0}, bestPos{};
+		size_t bestLength{}, bestPos{};
 		for (long long i = 0; i < sizeBuffer;)
 		{
 			long long l{};
@@ -56,6 +57,7 @@ std::vector<unsigned char> lz77::compress(const std::span<const unsigned char> d
 			shiftBuffer = shiftPos - maxSizeBuffer;
 		out.insert(out.end(), reinterpret_cast<unsigned char*>(&node), reinterpret_cast<unsigned char*>(&node) + sizeofNode);
 	}
+
 	return out;
 }
 
@@ -66,14 +68,12 @@ std::vector<unsigned char> lz77::decompress(const std::span<const unsigned char>
 	for (size_t i = 0; i < countNode; i++)
 	{
 		const Node* node = reinterpret_cast<const Node*>(&data[i * sizeofNode]);
-		size_t start{};
-		size_t s{};
 		if (node->length > 0)
 		{
-			s = out.size();
-			start = out.size() - node->offset;
+			const size_t s = out.size();
+			const size_t start = out.size() - node->offset;
 
-			for (size_t j = 0; j < node->length; j++)
+			for (size_t j = 0, k = 0; k < node->length; ++k, j = k % s)
 			{
 				out.push_back(out[start + j]);
 			}
