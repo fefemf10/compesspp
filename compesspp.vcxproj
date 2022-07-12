@@ -149,10 +149,12 @@
   <ItemGroup>
     <ClInclude Include="huffman.hpp" />
     <ClInclude Include="lz77.hpp" />
+    <ClInclude Include="lz78.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="huffman.cpp" />
     <ClCompile Include="lz77.cpp" />
+    <ClCompile Include="lz78.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

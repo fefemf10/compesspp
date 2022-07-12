@@ -8,6 +8,58 @@ struct Node
 };
 constexpr size_t sizeofNode = 5;
 
+std::vector<unsigned char> lz77::compressMod(const std::span<const unsigned char> data)
+{
+	constexpr const size_t maxSizeBuffer = 1024 * 64;
+	size_t sizeBuffer{};
+	std::vector<Node> nodes;
+	std::vector<unsigned char> out;
+	size_t shiftPos{};
+	size_t shiftBuffer{};
+
+	auto findMatching = [&](Node& node)
+	{
+		size_t bestLength{}, bestPos{};
+		for (long long i = 0; i < sizeBuffer;)
+		{
+			long long l{};
+			while (shiftPos + l < data.size() && i + l % sizeBuffer < sizeBuffer && data[shiftBuffer + i + l % sizeBuffer] == data[shiftPos + l])
+				++l;
+			if (l >= bestLength && l != 0)
+			{
+				bestPos = sizeBuffer - i;
+				bestLength = l;
+			}
+			l ? i += l : ++i;
+		}
+		node.offset = bestPos;
+		node.length = bestLength;
+	};
+	while (shiftPos <= data.size())
+	{
+		Node node{};
+		findMatching(node);
+		shiftPos += node.length;
+		if (shiftPos < data.size())
+		{
+			node.next = data[shiftPos];
+		}
+		else
+			node.next = '\n';
+		++shiftPos;
+		if (sizeBuffer < maxSizeBuffer)
+		{
+			sizeBuffer += node.length + 1;
+			if (sizeBuffer > maxSizeBuffer)
+				sizeBuffer = maxSizeBuffer;
+		}
+		if (sizeBuffer == maxSizeBuffer)
+			shiftBuffer = shiftPos - maxSizeBuffer;
+		out.insert(out.end(), reinterpret_cast<unsigned char*>(&node), reinterpret_cast<unsigned char*>(&node) + sizeofNode);
+	}
+
+	return out;
+}
 std::vector<unsigned char> lz77::compress(const std::span<const unsigned char> data)
 {
 	constexpr const size_t maxSizeBuffer = 1024*64;
