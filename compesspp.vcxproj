@@ -147,11 +147,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="File.hpp" />
     <ClInclude Include="huffman.hpp" />
     <ClInclude Include="lz77.hpp" />
     <ClInclude Include="lz78.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="File.cpp" />
     <ClCompile Include="huffman.cpp" />
     <ClCompile Include="lz77.cpp" />
     <ClCompile Include="lz78.cpp" />
